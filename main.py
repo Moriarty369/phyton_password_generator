@@ -2,14 +2,13 @@ from tkinter import *
 from tkinter import messagebox
 from random import choice, randint, shuffle
 import pyperclip
-
+import json
 
 # ------------------------------------------GENERADOR DE CONTRASEÑA---------------------------------------------------
 def generate_password():
     letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
     numbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
     symbols = ['!', '#', '$', '%', '&', '(', ')', '*', '+']
-
 
     password_letters = [choice(letters) for _ in range(randint(8, 10))]
     password_symbols = [choice(symbols) for _ in range(randint(2, 4))]
@@ -31,19 +30,33 @@ def save():
     website = website_entry.get()
     email = email_entry.get()
     password = password_entry.get()
-    is_ok = messagebox.askokcancel(title=website, message=f"Estos son los datos introducidos: \nSitio web: {website} \nUsuario o correo: {email} \nPassword: {password} \n¿Desea salvar los datos?")
+    new_data = {
+        website: {
+            "correo": email,
+            "contraseña": password
+        }
+    }
 
     if len(website) == 0 or len(password) == 0:
         messagebox.showinfo(title="Oops", message="Algo ha ido mal, asegurate de no haber dejado ninguna casilla vacía")
-
     else:
-        if is_ok:
-            # abrimos un archivo usando append mode (si no existe, es creado), con el with evitamos tener que cerrar
-            # el archivo con archivo.close()
-            with open("data.txt", "a")  as data_file:
-                data_file.write(f"{website} | {email} | {password}\n")
-                website_entry.delete(0, END)
-                password_entry.delete(0, END)
+        try:
+            with open("data.json", "r") as data_file:
+            # Leemos datos
+                data = json.load(data_file)
+        # Si los datos no existen, creamos el json
+        except FileNotFoundError:
+            with open("data.json", "w") as data_file:
+                json.dump(new_data, data_file, indent=4)
+        # En caso de que ya existan datos los actualizamos
+        else:
+            data.update(new_data)
+            # Salvamos los datos actualizados
+            with open("data.json", "w") as data_file:
+                json.dump(data, data_file, indent=4)
+        finally:
+            website_entry.delete(0, END)
+            password_entry.delete(0, END)
 
 # ---------------------------- UI SETUP ------------------------------- #
 # Ojo-- falta por hacer responsive los 3 inputs
@@ -77,7 +90,7 @@ website_entry.grid(row=1, column=1, columnspan=2, sticky="w")
 website_entry.focus()
 email_entry = Entry(width=35)
 email_entry.grid(row=2, column=1, columnspan=2, sticky="w")
-email_entry.insert(0, "debe_colocar_email")
+email_entry.insert(0, "Ingrese su correo/usuario")
 password_entry = Entry(width=21)
 password_entry.grid(row=3, column=1, sticky="w")
 
